@@ -1,9 +1,6 @@
-# sqlengine — a SQL query engine from scratch
+# sqlengine: a SQL query engine from scratch
 
-A small but real SQL engine in pure Python (no dependencies): it lexes and parses
-SQL, builds a query plan, executes it with Volcano-style operators (including
-**hash join**, **nested-loop join**, and **aggregation**), and chooses between
-plans with a **cost-based optimizer**.
+A small but real SQL engine in pure Python, no dependencies. It lexes and parses SQL, builds a query plan, runs it with Volcano-style operators (including **hash join**, **nested-loop join**, and **aggregation**), and picks between plans with a **cost-based optimizer**.
 
 ## Pipeline
 
@@ -31,9 +28,7 @@ Aggregates: `COUNT(*)`, `COUNT(col)`, `SUM`, `AVG`, `MIN`, `MAX`.
 
 ## Operators (Volcano model)
 
-Each operator is an iterator yielding rows: `Scan`, `Filter`, `NestedLoopJoin`,
-`HashJoin`, `HashAggregate`, `Project`, `Sort`, `Limit`. Rows are dicts keyed by
-qualified name (`alias.column`).
+Every operator is an iterator that yields rows: `Scan`, `Filter`, `NestedLoopJoin`, `HashJoin`, `HashAggregate`, `Project`, `Sort`, `Limit`. Rows are dicts keyed by qualified name (`alias.column`).
 
 | Join | Cost | When |
 |------|------|------|
@@ -44,12 +39,9 @@ qualified name (`alias.column`).
 
 Three optimizations, all visible in `EXPLAIN`:
 
-1. **Predicate pushdown** — single-table `WHERE` conjuncts are pushed down onto
-   the relevant scan, so rows are filtered *before* joining.
-2. **Join ordering** — joins are applied smallest-relation-first (using catalog
-   row-count stats) to keep intermediate results small.
-3. **Join-algorithm selection** — the planner estimates nested-loop vs hash cost
-   and picks the cheaper. For equi-joins hash wins, and the engine confirms it.
+1. **Predicate pushdown.** Single-table `WHERE` conjuncts get pushed down onto the relevant scan, so rows are filtered *before* the join instead of after.
+2. **Join ordering.** Joins are applied smallest-relation-first (using catalog row-count stats) to keep intermediate results small.
+3. **Join-algorithm selection.** The planner estimates nested-loop vs hash cost and picks the cheaper one. For equi-joins hash wins, and the engine confirms it.
 
 ```
 $ python -m qe.cli
@@ -63,7 +55,7 @@ Project [u.name]
 
 ## Benchmark
 
-`python bench.py` (2,000 users ⋈ 20,000 orders), measured in the sandbox:
+`python bench.py` (2,000 users joined with 20,000 orders), measured in the sandbox:
 
 ```
 nested-loop join:   6658.1 ms  (20000 rows)
@@ -73,8 +65,7 @@ speedup:             142.4x  -> optimizer auto-picks hash join
 predicate pushdown: 37.3 ms (no filter) -> 19.3 ms (filter pushed below join)
 ```
 
-The 142× gap is exactly the O(n·m) vs O(n+m) difference the optimizer reasons
-about from its cost model.
+That 142x gap is exactly the O(n·m) vs O(n+m) difference the optimizer reasons about from its cost model. It's nice when the theory shows up in the wall-clock numbers.
 
 ## Run it
 
@@ -86,10 +77,7 @@ pytest -q                 # 10 tests
 
 ## Tests
 
-`test_engine.py` covers parsing, `WHERE` with AND/OR precedence, both join
-algorithms producing identical results, `GROUP BY` with `COUNT/SUM/MIN/MAX/AVG`,
-`ORDER BY`/`LIMIT`, that the optimizer picks hash join, and that filters are
-pushed below joins.
+`test_engine.py` covers parsing, `WHERE` with AND/OR precedence, both join algorithms producing identical results, `GROUP BY` with `COUNT/SUM/MIN/MAX/AVG`, `ORDER BY`/`LIMIT`, the optimizer picking hash join, and filters getting pushed below joins.
 
 ## Layout
 
@@ -106,8 +94,4 @@ bench.py         join-algorithm + pushdown benchmark
 
 ## Limitations
 
-Inner equi-joins only (no outer joins / non-equi join conditions); `HAVING`,
-subqueries, and `DISTINCT` aren't implemented; statistics are row-counts with a
-fixed selectivity constant rather than histograms. The architecture (logical AST
-→ cost-based physical plan → iterator operators) is the same one real engines
-use, so each of these is an additive extension rather than a rewrite.
+Inner equi-joins only (no outer joins or non-equi conditions). `HAVING`, subqueries, and `DISTINCT` aren't implemented. Statistics are row-counts with a fixed selectivity constant rather than real histograms. The architecture (logical AST, then cost-based physical plan, then iterator operators) is the same one real engines use, so each of these is an additive feature rather than a rewrite.
