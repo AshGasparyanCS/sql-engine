@@ -1,5 +1,7 @@
 # sqlengine: a SQL query engine from scratch
 
+![tests](https://github.com/AshGasparyanCS/sql-engine/actions/workflows/tests.yml/badge.svg)
+
 A small but real SQL engine in pure Python, no dependencies. It lexes and parses SQL, builds a query plan, runs it with Volcano-style operators (including **hash join**, **nested-loop join**, and **aggregation**), and picks between plans with a **cost-based optimizer**.
 
 ## Pipeline
